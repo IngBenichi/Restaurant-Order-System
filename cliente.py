@@ -7,6 +7,52 @@ from datetime import datetime
 import socket
 import json
 import os
+import openpyxl
+from openpyxl import Workbook
+from datetime import datetime
+import os
+# Función para guardar los pedidos en un archivo Excel
+def save_order_to_excel(order, client_name):
+    # Verificar si el archivo de Excel ya existe
+    excel_filename = "pedidos.xlsx"
+    file_exists = os.path.exists(excel_filename)
+
+    # Crear un libro de trabajo
+    if not file_exists:
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Pedidos"
+        
+        # Agregar encabezados de las columnas
+        ws.append([
+            "Fecha", "Cliente", "Producto", "Categoría", "Cantidad", "Precio Unitario", "Subtotal"
+        ])
+    else:
+        wb = openpyxl.load_workbook(excel_filename)
+        ws = wb.active
+    
+    # Calcular el total del pedido
+    total = sum(item["subtotal"] for item in order.values())
+    
+    # Recorrer el pedido y agregar las filas
+    for item in order.values():
+        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        ws.append([
+            date, 
+            client_name, 
+            item["name"], 
+            item["category"], 
+            item["quantity"], 
+            item["unit_price"], 
+            item["subtotal"]
+        ])
+    
+    # Agregar una fila para el total
+    ws.append(["", "", "Total", "", "", "", total])
+    
+    # Guardar el archivo de Excel
+    wb.save(excel_filename)
+
 
 # Menú de opciones
 MENU = {
@@ -52,6 +98,7 @@ MENU = {
 # Función para generar el PDF del pedido
 def generate_pdf(order, client_name):
     filename = f"factura_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    print(f"Generando PDF: {filename}") 
     pdf = SimpleDocTemplate(filename, pagesize=letter)
 
     styles = getSampleStyleSheet()
@@ -130,8 +177,23 @@ def send_order_to_server(order, client_name, pdf_filename):
     client_socket.close()
 
 
+import flet as ft
+
 # Función principal de la interfaz gráfica
 def main(page: ft.Page):
+    
+    # Ruta del archivo de la imagen del logo
+    logo_path = "logo.png"  # Asegúrate de tener la ruta correcta al logo
+
+    # Crear el logo como un componente de imagen
+    logo = ft.Image(src=logo_path, width=200, height=100)
+
+    page.add(
+        ft.Column([
+            logo,  # Agregar el logo
+            ft.Text("M&M Food & Drink", size=24, weight="bold", text_align="center"),  # Corregido 'alignment' por 'text_align'
+        ])
+    )
     page.title = "M&M Food & Drink - Cliente"
     page.scroll = ft.ScrollMode.AUTO
 
@@ -170,39 +232,41 @@ def main(page: ft.Page):
             qty_label.value = str(order.get(name, {}).get("quantity", 0))
         update_summary()
 
-# Función para enviar el pedido al servidor
+    # Función para enviar el pedido al servidor
     def send_order(e):
         if not client_name.value.strip():
             page.overlay.append(ft.SnackBar(ft.Text("Por favor ingrese su nombre."), open=True))
             page.update()
             return
-    
+
         if not order:
             page.overlay.append(ft.SnackBar(ft.Text("No hay productos en el pedido."), open=True))
             page.update()
             return
-    
+
+        # Guardar el pedido en el archivo de Excel
+        save_order_to_excel(order, client_name.value.strip())
+
         # Generar el PDF
         filename = generate_pdf(order, client_name.value.strip())
-    
+
         # Enviar el pedido al servidor (mesero) junto con el archivo PDF y el nombre del cliente
         send_order_to_server(order, client_name.value.strip(), filename)
-    
+
         # Mostrar mensaje de éxito
         page.overlay.append(ft.SnackBar(ft.Text(f"Factura generada y enviada: {filename}"), open=True))
-    
+
         # Limpiar los datos del formulario para permitir un nuevo pedido
         order.clear()  # Limpiar el pedido
         client_name.value = ""  # Limpiar el nombre del cliente
         resumen_pedido.controls.clear()  # Limpiar el resumen del pedido
-    
+
         # Reiniciar los contadores de cantidad de cada producto en el menú
         for name, qty_label in qty_labels.items():
             qty_label.value = "0"  # Restablecer la cantidad a 0
-    
+
         # Forzar la actualización de la página
         page.update()  # Actualizar la página para reflejar todos los cambios
-
 
     menu_items = []
     for category, items in MENU.items():
@@ -221,7 +285,6 @@ def main(page: ft.Page):
     
     page.add(
         ft.Column([ 
-            ft.Row([ft.Text("M&M Food & Drink", size=24, weight="bold")], alignment="center"),
             ft.Row([client_name]),
             ft.Column(menu_items, scroll=ft.ScrollMode.AUTO, expand=True),  # Menú con scroll dinámico
             ft.Text("Resumen del Pedido", size=20, weight="bold"),
@@ -229,4 +292,5 @@ def main(page: ft.Page):
             ft.ElevatedButton("Enviar Pedido", on_click=send_order),
         ])
     )
+
 ft.app(target=main)

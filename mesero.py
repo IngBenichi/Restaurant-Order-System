@@ -142,6 +142,9 @@ def main(page: ft.Page):
     # Estilización de la página: fondo negro
     page.bgcolor = "#1a1a1a"  # Fondo negro
 
+    # Crear el logo
+    logo = ft.Image(src="logo.png", width=100, height=100)  # Ajusta la ruta y el tamaño
+
     # Contenedor de pedidos
     orders_list = ft.Column(
         spacing=10, 
@@ -179,14 +182,17 @@ def main(page: ft.Page):
     # Contenedor principal con botones y controles
     main_container = ft.Container(
         content=ft.Column([  
-            ft.Row([ft.Text("Pedidos recibidos", size=24, weight="bold", color="white"),
-                    ft.Container(
-                        content=notification_button_badge,
-                        padding=ft.Padding(left=12, top=5, right=0, bottom=0),  # Corregido el padding
-                        alignment=ft.alignment.top_right,
-                        expand=True
-                    ),
-                    notification_button], alignment="center"),
+            ft.Row([
+                logo,  # Agregar el logo aquí
+                ft.Text("Pedidos recibidos", size=24, weight="bold", color="white"),
+                ft.Container(
+                    content=notification_button_badge,
+                    padding=ft.Padding(left=12, top=5, right=0, bottom=0),  # Corregido el padding
+                    alignment=ft.alignment.top_right,
+                    expand=True
+                ),
+                notification_button
+            ], alignment="center"),
             notification,
             orders_list,
         ], expand=True, alignment="start"),
@@ -202,5 +208,4 @@ def main(page: ft.Page):
     threading.Thread(target=process_queue, args=(page,), daemon=True).start()
 
     page.update()
-
 ft.app(target=main)
