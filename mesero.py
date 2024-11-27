@@ -143,7 +143,7 @@ def main(page: ft.Page):
     page.bgcolor = "#1a1a1a"  # Fondo negro
 
     # Crear el logo
-    logo = ft.Image(src="logo.png", width=100, height=100)  # Ajusta la ruta y el tamaño
+    logo = ft.Image(src="images/logo.png", width=100, height=100)  # Ajusta la ruta y el tamaño
 
     # Contenedor de pedidos
     orders_list = ft.Column(

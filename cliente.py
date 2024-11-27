@@ -183,7 +183,7 @@ import flet as ft
 def main(page: ft.Page):
     
     # Ruta del archivo de la imagen del logo
-    logo_path = "logo.png"  # Asegúrate de tener la ruta correcta al logo
+    logo_path = "images/logo.png"  # Asegúrate de tener la ruta correcta al logo
 
     # Crear el logo como un componente de imagen
     logo = ft.Image(src=logo_path, width=200, height=100)
