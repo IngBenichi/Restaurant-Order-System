@@ -233,6 +233,21 @@ def main(page: ft.Page):
         update_summary()
 
     # Función para enviar el pedido al servidor
+    # Función para borrar todo el pedido y formatear los datos
+    def clear_order(e):
+        # Limpiar el pedido y el nombre del cliente
+        order.clear()
+        client_name.value = ""
+
+        # Limpiar el resumen del pedido
+        resumen_pedido.controls.clear()
+
+        # Reiniciar los contadores de cantidad de cada producto en el menú
+        for name, qty_label in qty_labels.items():
+            qty_label.value = "0"  # Restablecer la cantidad a 0
+    
+        page.update()
+
     def send_order(e):
         if not client_name.value.strip():
             page.overlay.append(ft.SnackBar(ft.Text("Por favor ingrese su nombre."), open=True))
@@ -290,6 +305,7 @@ def main(page: ft.Page):
             ft.Text("Resumen del Pedido", size=20, weight="bold"),
             resumen_pedido,
             ft.ElevatedButton("Enviar Pedido", on_click=send_order),
+            ft.ElevatedButton("Borrar Pedido", on_click=clear_order)
         ])
     )
 
