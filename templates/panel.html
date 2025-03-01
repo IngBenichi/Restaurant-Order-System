@@ -86,10 +86,10 @@
                         ${pedido.order.map(item => `${item.producto}`).join("<br>")}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
-                        ${pedido.order.map(item => item.cantidad).join("<br>")}
+                        ${pedido.order.map(item => item.quantity).join("<br>")}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
-                        ${pedido.order.map(item => `$${item.precio_unitario}`).join("<br>")}
+                        ${pedido.order.map(item => `$${item.unit_price}`).join("<br>")}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
                         ${pedido.order.map(item => `$${item.subtotal}`).join("<br>")}
