@@ -1,32 +1,24 @@
-import requests
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-# URL del servidor (Render proporcionará un dominio)
-SERVER_URL = "https://tu-servidor-render.onrender.com"
+app = Flask(__name__)
+CORS(app)  # Habilita CORS para que el cliente pueda hacer solicitudes
 
-def hacer_pedido():
-    cliente = input("Ingrese su nombre: ")
-    productos = []
+pedidos = []  # Lista temporal para almacenar pedidos
 
-    while True:
-        nombre = input("Nombre del producto (o 'fin' para terminar): ")
-        if nombre.lower() == "fin":
-            break
-        cantidad = input("Cantidad: ")
-        precio = input("Precio unitario: ")
+@app.route("/")
+def home():
+    return "Servidor de mesero funcionando correctamente."
 
-        productos.append({
-            "nombre": nombre,
-            "cantidad": cantidad,
-            "precio": precio
-        })
-
-    # Enviar datos al servidor
-    response = requests.post(f"{SERVER_URL}/pedidos", json={"cliente": cliente, "productos": productos})
-
-    if response.status_code == 200:
-        print("✅ Pedido realizado con éxito:", response.json())
-    else:
-        print("❌ Error en el pedido:", response.json())
+@app.route("/pedidos", methods=["POST"])
+def recibir_pedido():
+    data = request.get_json()
+    
+    if not data or "cliente" not in data or "productos" not in data:
+        return jsonify({"error": "Faltan datos"}), 400
+    
+    pedidos.append(data)  # Guarda el pedido
+    return jsonify({"mensaje": "Pedido recibido", "pedido": data}), 200
 
 if __name__ == "__main__":
-    hacer_pedido()
+    app.run(debug=True, host="0.0.0.0", port=8080)
