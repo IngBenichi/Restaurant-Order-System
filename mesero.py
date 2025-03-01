@@ -44,18 +44,35 @@ def panel():
         return redirect(url_for("login"))
     return render_template("panel.html", pedidos=pedidos)
 
-# 🚀 NUEVO: Endpoint para recibir pedidos desde cliente.py
+# 🚀 Endpoint para recibir pedidos desde cliente.py
 @app.route("/pedidos", methods=["POST"])
-@socketio.on("nuevo_pedido")
-def recibir_pedido(data):
+def recibir_pedido():
     """Recibe un pedido desde el cliente y lo guarda en la lista de pedidos."""
+    
+    # Revisar si la petición contiene un archivo PDF
+    pdf_file = request.files.get("pdf")
+    
+    if "order" not in request.form:
+        return jsonify({"error": "Faltan datos"}), 400
+
+    try:
+        # Decodificar la orden que viene en formato JSON
+        data = json.loads(request.form["order"])
+    except json.JSONDecodeError:
+        return jsonify({"error": "Formato JSON inválido"}), 400
+
     if "client_name" not in data or "order" not in data:
         return jsonify({"error": "Faltan datos"}), 400
 
     total = sum(item["cantidad"] * item["precio_unitario"] for item in data["order"])
 
-    # Generar URL del PDF (asumiendo que ya generaste el archivo)
+    # Guardar el archivo PDF en la carpeta de facturas
     pdf_filename = f"{data['client_name'].replace(' ', '_')}_factura.pdf"
+    pdf_path = os.path.join("facturas", pdf_filename)
+    
+    if pdf_file:
+        pdf_file.save(pdf_path)
+
     pdf_url = f"/facturas/{pdf_filename}"
 
     pedido = {
@@ -71,8 +88,6 @@ def recibir_pedido(data):
     socketio.emit("actualizar_pedidos", {"pedidos": pedidos}, broadcast=True)
 
     return jsonify({"mensaje": "Pedido recibido", "pedido": pedido}), 200
-
-
 
 @socketio.on("nuevo_pedido")
 def recibir_pedido_ws(data):
