@@ -90,7 +90,7 @@ def recibir_pedido():
 
     pedidos.append(pedido)
 
-    socketio.emit("actualizar_pedidos", {"pedidos": pedidos}, include_self=False)
+    socketio.emit("actualizar_pedidos", {"pedidos": pedidos})
 
     return jsonify({"mensaje": "Pedido recibido", "pedido": pedido}), 200
 
