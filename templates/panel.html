@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Pedidos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl">
+        <h2 class="text-2xl font-bold text-center mb-4">Pedidos Recibidos</h2>
+
+        <!-- Tabla de pedidos -->
+        <table class="w-full border-collapse border border-gray-300">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="border border-gray-300 px-4 py-2">Cliente</th>
+                    <th class="border border-gray-300 px-4 py-2">Productos</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-pedidos">
+                {% for pedido in pedidos %}
+                <tr class="bg-white even:bg-gray-100">
+                    <td class="border border-gray-300 px-4 py-2 text-center">{{ pedido.client_name }}</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">{{ pedido.order | join(', ') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a href="{{ url_for('logout') }}" 
+            class="block mt-4 text-center bg-red-500 text-white py-2 rounded-lg hover:bg-red-600">
+            Cerrar Sesión
+        </a>
+    </div>
+
+    <!-- Script para recibir pedidos en tiempo real -->
+    <script>
+        const socket = io("http://localhost:8080");
+
+        socket.on("actualizar_pedidos", function(pedidos) {
+            const tablaPedidos = document.getElementById("tabla-pedidos");
+            tablaPedidos.innerHTML = "";  // Limpiar tabla
+
+            pedidos.forEach(pedido => {
+                const row = document.createElement("tr");
+                row.className = "bg-white even:bg-gray-100";
+
+                const tdCliente = document.createElement("td");
+                tdCliente.className = "border border-gray-300 px-4 py-2 text-center";
+                tdCliente.textContent = pedido.client_name;
+
+                const tdProductos = document.createElement("td");
+                tdProductos.className = "border border-gray-300 px-4 py-2 text-center";
+                tdProductos.textContent = pedido.order.join(", ");
+
+                row.appendChild(tdCliente);
+                row.appendChild(tdProductos);
+                tablaPedidos.appendChild(row);
+            });
+        });
+    </script>
+</body>
+</html>

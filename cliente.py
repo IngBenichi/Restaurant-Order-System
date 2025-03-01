@@ -11,6 +11,7 @@ import openpyxl
 from openpyxl import Workbook
 from datetime import datetime
 import os
+import requests
 # Función para guardar los pedidos en un archivo Excel
 def save_order_to_excel(order, client_name):
     # Verificar si el archivo de Excel ya existe
@@ -155,26 +156,30 @@ def generate_pdf(order, client_name):
 
 # Función para enviar el pedido al servidor
 # Función para enviar el pedido al servidor
-def send_order_to_server(order, client_name, pdf_filename):
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('localhost', 8080))  # Dirección del servidor (mesero)
 
+
+# Reemplaza con la URL de tu servidor en Render
+SERVER_URL = "https://restaurant-order-system-9tn7.onrender.com"
+
+def send_order_to_server(order, client_name, pdf_filename):
     # Crear el pedido con el client_name incluido
     order_with_client = {"client_name": client_name, "order": order}
 
-    # Enviar el pedido como JSON
-    order_json = json.dumps(order_with_client)
-    client_socket.send(order_json.encode('utf-8'))
-
-    # Enviar el PDF como archivo binario
+    # Leer el archivo PDF
     with open(pdf_filename, 'rb') as pdf_file:
-        pdf_data = pdf_file.read()
-        client_socket.sendall(pdf_data)
+        files = {'pdf': pdf_file}
+        data = {'order': json.dumps(order_with_client)}
 
-    # Recibir la respuesta del mesero
-    response = client_socket.recv(1024).decode('utf-8')
-    print(response)
-    client_socket.close()
+        try:
+            # Enviar el pedido como una petición POST
+            response = requests.post(f"{SERVER_URL}/pedidos", files=files, data=data)
+
+            # Imprimir la respuesta del servidor
+            print("Respuesta del servidor:", response.text)
+        except Exception as e:
+            print(f"Error al conectar con el servidor: {e}")
+
+
 
 
 import flet as ft
