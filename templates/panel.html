@@ -16,7 +16,8 @@
             <thead class="bg-gray-200">
                 <tr>
                     <th class="border border-gray-300 px-4 py-2">Cliente</th>
-                    <th class="border border-gray-300 px-4 py-2">Productos</th>
+                    <th class="border border-gray-300 px-4 py-2">Categoría</th>
+                    <th class="border border-gray-300 px-4 py-2">Producto</th>
                     <th class="border border-gray-300 px-4 py-2">Cantidad</th>
                     <th class="border border-gray-300 px-4 py-2">Precio Unitario</th>
                     <th class="border border-gray-300 px-4 py-2">Subtotal</th>
@@ -30,17 +31,22 @@
                     <td class="border border-gray-300 px-4 py-2">{{ pedido.client_name }}</td>
                     <td class="border border-gray-300 px-4 py-2">
                         {% for item in pedido.order %}
-                            {{ item.producto }}<br>
+                            {{ item.category }}<br>
                         {% endfor %}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
                         {% for item in pedido.order %}
-                            {{ item.cantidad }}<br>
+                            {{ item.name }}<br>
                         {% endfor %}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
                         {% for item in pedido.order %}
-                            ${{ item.precio_unitario }}<br>
+                            {{ item.quantity }}<br>
+                        {% endfor %}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        {% for item in pedido.order %}
+                            ${{ item.unit_price }}<br>
                         {% endfor %}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
@@ -70,7 +76,7 @@
 
     <!-- Script para recibir pedidos en tiempo real -->
     <script>
-        const socket = io("http://localhost:8080");
+        const socket = io();
 
         socket.on("actualizar_pedidos", function(data) {
             const tablaPedidos = document.getElementById("tabla-pedidos");
@@ -83,7 +89,10 @@
                 row.innerHTML = `
                     <td class="border border-gray-300 px-4 py-2">${pedido.client_name}</td>
                     <td class="border border-gray-300 px-4 py-2">
-                        ${pedido.order.map(item => `${item.producto}`).join("<br>")}
+                        ${pedido.order.map(item => `${item.category}`).join("<br>")}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        ${pedido.order.map(item => `${item.name}`).join("<br>")}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
                         ${pedido.order.map(item => item.quantity).join("<br>")}
