@@ -8,22 +8,55 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl">
-        <h2 class="text-2xl font-bold text-center mb-4">Pedidos Recibidos</h2>
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl">
+        <h2 class="text-2xl font-bold text-center mb-4">📦 Pedidos Recibidos</h2>
 
         <!-- Tabla de pedidos -->
-        <table class="w-full border-collapse border border-gray-300">
+        <table class="w-full border-collapse border border-gray-300 text-sm">
             <thead class="bg-gray-200">
                 <tr>
                     <th class="border border-gray-300 px-4 py-2">Cliente</th>
                     <th class="border border-gray-300 px-4 py-2">Productos</th>
+                    <th class="border border-gray-300 px-4 py-2">Cantidad</th>
+                    <th class="border border-gray-300 px-4 py-2">Precio Unitario</th>
+                    <th class="border border-gray-300 px-4 py-2">Subtotal</th>
+                    <th class="border border-gray-300 px-4 py-2">Total</th>
+                    <th class="border border-gray-300 px-4 py-2">Factura</th>
                 </tr>
             </thead>
             <tbody id="tabla-pedidos">
                 {% for pedido in pedidos %}
-                <tr class="bg-white even:bg-gray-100">
-                    <td class="border border-gray-300 px-4 py-2 text-center">{{ pedido.client_name }}</td>
-                    <td class="border border-gray-300 px-4 py-2 text-center">{{ pedido.order | join(', ') }}</td>
+                <tr class="bg-white even:bg-gray-100 text-center">
+                    <td class="border border-gray-300 px-4 py-2">{{ pedido.client_name }}</td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        {% for item in pedido.order %}
+                            {{ item.producto }}<br>
+                        {% endfor %}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        {% for item in pedido.order %}
+                            {{ item.cantidad }}<br>
+                        {% endfor %}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        {% for item in pedido.order %}
+                            ${{ item.precio_unitario }}<br>
+                        {% endfor %}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        {% for item in pedido.order %}
+                            ${{ item.subtotal }}<br>
+                        {% endfor %}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2 font-bold">
+                        ${{ pedido.total }}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        <a href="{{ pedido.pdf_url }}" target="_blank" 
+                           class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                            📄 Descargar
+                        </a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -39,24 +72,39 @@
     <script>
         const socket = io("http://localhost:8080");
 
-        socket.on("actualizar_pedidos", function(pedidos) {
+        socket.on("actualizar_pedidos", function(data) {
             const tablaPedidos = document.getElementById("tabla-pedidos");
-            tablaPedidos.innerHTML = "";  // Limpiar tabla
+            tablaPedidos.innerHTML = "";  // Limpiar tabla antes de agregar nuevos pedidos
 
-            pedidos.forEach(pedido => {
+            data.pedidos.forEach(pedido => {
                 const row = document.createElement("tr");
-                row.className = "bg-white even:bg-gray-100";
+                row.className = "bg-white even:bg-gray-100 text-center";
 
-                const tdCliente = document.createElement("td");
-                tdCliente.className = "border border-gray-300 px-4 py-2 text-center";
-                tdCliente.textContent = pedido.client_name;
+                row.innerHTML = `
+                    <td class="border border-gray-300 px-4 py-2">${pedido.client_name}</td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        ${pedido.order.map(item => `${item.producto}`).join("<br>")}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        ${pedido.order.map(item => item.cantidad).join("<br>")}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        ${pedido.order.map(item => `$${item.precio_unitario}`).join("<br>")}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        ${pedido.order.map(item => `$${item.subtotal}`).join("<br>")}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2 font-bold">
+                        $${pedido.total}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        <a href="${pedido.pdf_url}" target="_blank" 
+                           class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                            📄 Descargar
+                        </a>
+                    </td>
+                `;
 
-                const tdProductos = document.createElement("td");
-                tdProductos.className = "border border-gray-300 px-4 py-2 text-center";
-                tdProductos.textContent = pedido.order.join(", ");
-
-                row.appendChild(tdCliente);
-                row.appendChild(tdProductos);
                 tablaPedidos.appendChild(row);
             });
         });

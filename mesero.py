@@ -46,27 +46,33 @@ def panel():
 
 # 🚀 NUEVO: Endpoint para recibir pedidos desde cliente.py
 @app.route("/pedidos", methods=["POST"])
-def recibir_pedido():
-    try:
-        # Extraer JSON del formulario enviado
-        order_json = json.loads(request.form['order'])  
-        pdf_file = request.files['pdf']  # Extraer el archivo PDF
+@socketio.on("nuevo_pedido")
+def recibir_pedido(data):
+    """Recibe un pedido desde el cliente y lo guarda en la lista de pedidos."""
+    if "client_name" not in data or "order" not in data:
+        return jsonify({"error": "Faltan datos"}), 400
 
-        # Guardar PDF con el nombre del cliente
-        pdf_filename = f"facturas/{order_json['client_name']}_factura.pdf"
-        pdf_file.save(pdf_filename)
+    total = sum(item["cantidad"] * item["precio_unitario"] for item in data["order"])
 
-        # Guardar el pedido en la lista
-        pedidos.append(order_json)
+    # Generar URL del PDF (asumiendo que ya generaste el archivo)
+    pdf_filename = f"{data['client_name'].replace(' ', '_')}_factura.pdf"
+    pdf_url = f"/facturas/{pdf_filename}"
 
-        print(f"Pedido recibido de {order_json['client_name']}: {order_json['order']}")  # Debugging
+    pedido = {
+        "client_name": data["client_name"],
+        "order": data["order"],
+        "total": total,
+        "pdf_url": pdf_url
+    }
+    
+    pedidos.append(pedido)
+    
+    # 🔥 Emitir el evento para actualizar la interfaz
+    socketio.emit("actualizar_pedidos", {"pedidos": pedidos}, broadcast=True)
 
-        # Notificar a clientes conectados vía WebSockets
-        socketio.emit("actualizar_pedidos", pedidos)
+    return jsonify({"mensaje": "Pedido recibido", "pedido": pedido}), 200
 
-        return jsonify({"mensaje": "Pedido recibido correctamente"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+
 
 @socketio.on("nuevo_pedido")
 def recibir_pedido_ws(data):
