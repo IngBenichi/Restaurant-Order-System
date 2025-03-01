@@ -16,9 +16,11 @@ if not os.path.exists("facturas"):
 
 USERS = {"admin": "1234"}
 
+
 @app.route("/")
 def home():
     return redirect(url_for("login"))
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -31,10 +33,12 @@ def login():
         return render_template("login.html", error="Credenciales incorrectas")
     return render_template("login.html")
 
+
 @app.route("/logout")
 def logout():
     session.pop("user", None)
     return redirect(url_for("login"))
+
 
 @app.route("/panel")
 def panel():
@@ -42,34 +46,36 @@ def panel():
         return redirect(url_for("login"))
     return render_template("panel.html", pedidos=pedidos)
 
+
 @app.route("/pedidos", methods=["POST"])
 def recibir_pedido():
     """Recibe un pedido desde el cliente y lo guarda en la lista de pedidos."""
-    
+
     pdf_file = request.files.get("pdf")
-    
+
     if "order" not in request.form:
         return jsonify({"error": "Faltan datos"}), 400
 
+
     try:
-        # 💡 Aquí corregimos la deserialización del JSON
         data = json.loads(request.form["order"])
-        
-        # Convertimos `data["order"]` a una lista si es un string JSON
+
         if isinstance(data["order"], str):
             data["order"] = json.loads(data["order"])
-        
+
+        print("Pedido procesado:", json.dumps(data, indent=2, ensure_ascii=False))
+
     except json.JSONDecodeError:
         return jsonify({"error": "Formato JSON inválido"}), 400
 
     if "client_name" not in data or not isinstance(data["order"], list):
         return jsonify({"error": "Faltan datos o el formato es incorrecto"}), 400
 
-    total = sum(item["cantidad"] * item["precio_unitario"] for item in data["order"])
+    total = sum(item["quantity"] * item["unit_price"] for item in data["order"])
 
     pdf_filename = f"{data['client_name'].replace(' ', '_')}_factura.pdf"
     pdf_path = os.path.join("facturas", pdf_filename)
-    
+
     if pdf_file:
         pdf_file.save(pdf_path)
 
@@ -79,14 +85,15 @@ def recibir_pedido():
         "client_name": data["client_name"],
         "order": data["order"],
         "total": total,
-        "pdf_url": pdf_url
+        "pdf_url": pdf_url,
     }
-    
+
     pedidos.append(pedido)
-    
-    socketio.emit("actualizar_pedidos", {"pedidos": pedidos}, broadcast=True)
+
+    socketio.emit("actualizar_pedidos", {"pedidos": pedidos}, include_self=False)
 
     return jsonify({"mensaje": "Pedido recibido", "pedido": pedido}), 200
+
 
 @socketio.on("nuevo_pedido")
 def recibir_pedido_ws(data):
@@ -94,9 +101,10 @@ def recibir_pedido_ws(data):
         return jsonify({"error": "Faltan datos"}), 400
 
     pedidos.append(data)
-    print(f"Nuevo pedido recibido vía WebSockets: {data}")  
+    print(f"Nuevo pedido recibido vía WebSockets: {data}")
     socketio.emit("actualizar_pedidos", pedidos)
     return jsonify({"mensaje": "Pedido recibido", "pedido": data}), 200
+
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, host="0.0.0.0", port=8080)

@@ -166,23 +166,21 @@ def generate_pdf(order, client_name):
 SERVER_URL = "https://restaurant-order-system-9tn7.onrender.com"
 
 def send_order_to_server(order, client_name, pdf_filename):
-    # Crear el pedido con el client_name incluido
-    order_with_client = {"client_name": client_name, "order": order}
+    order_list = list(order.values())  # Convertir a lista
+    order_with_client = {"client_name": client_name, "order": order_list}
 
-    # Leer el archivo PDF
+    print("Pedido enviado al servidor:", json.dumps(order_with_client, indent=2, ensure_ascii=False))
+
     with open(pdf_filename, 'rb') as pdf_file:
         files = {'pdf': pdf_file}
-        data = {'order': json.dumps(order_with_client)}
+        data = {'order': json.dumps(order_with_client, ensure_ascii=False)}
 
         try:
-            # Enviar el pedido como una petición POST
             response = requests.post(f"{SERVER_URL}/pedidos", files=files, data=data)
 
-            # Imprimir la respuesta del servidor
             print("Respuesta del servidor:", response.text)
         except Exception as e:
             print(f"Error al conectar con el servidor: {e}")
-
 
 
 
