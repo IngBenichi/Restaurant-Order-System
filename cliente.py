@@ -98,7 +98,11 @@ MENU = {
 
 # Función para generar el PDF del pedido
 def generate_pdf(order, client_name):
-    filename = f"factura_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    # Crear la carpeta "factura" si no existe
+    if not os.path.exists("factura"):
+        os.makedirs("factura")
+
+    filename = f"factura/factura_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     print(f"Generando PDF: {filename}") 
     pdf = SimpleDocTemplate(filename, pagesize=letter)
 

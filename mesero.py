@@ -5,17 +5,15 @@ import os
 import json
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # Clave para manejar sesiones
-socketio = SocketIO(app, cors_allowed_origins="*")  # WebSockets
+app.secret_key = "supersecretkey"
+socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app)
 
-pedidos = []  # Lista para almacenar pedidos
+pedidos = []
 
-# Crear carpeta para facturas si no existe
 if not os.path.exists("facturas"):
     os.makedirs("facturas")
 
-# Datos de usuario (puedes cambiar esto a una base de datos)
 USERS = {"admin": "1234"}
 
 @app.route("/")
@@ -44,29 +42,31 @@ def panel():
         return redirect(url_for("login"))
     return render_template("panel.html", pedidos=pedidos)
 
-# 🚀 Endpoint para recibir pedidos desde cliente.py
 @app.route("/pedidos", methods=["POST"])
 def recibir_pedido():
     """Recibe un pedido desde el cliente y lo guarda en la lista de pedidos."""
     
-    # Revisar si la petición contiene un archivo PDF
     pdf_file = request.files.get("pdf")
     
     if "order" not in request.form:
         return jsonify({"error": "Faltan datos"}), 400
 
     try:
-        # Decodificar la orden que viene en formato JSON
+        # 💡 Aquí corregimos la deserialización del JSON
         data = json.loads(request.form["order"])
+        
+        # Convertimos `data["order"]` a una lista si es un string JSON
+        if isinstance(data["order"], str):
+            data["order"] = json.loads(data["order"])
+        
     except json.JSONDecodeError:
         return jsonify({"error": "Formato JSON inválido"}), 400
 
-    if "client_name" not in data or "order" not in data:
-        return jsonify({"error": "Faltan datos"}), 400
+    if "client_name" not in data or not isinstance(data["order"], list):
+        return jsonify({"error": "Faltan datos o el formato es incorrecto"}), 400
 
     total = sum(item["cantidad"] * item["precio_unitario"] for item in data["order"])
 
-    # Guardar el archivo PDF en la carpeta de facturas
     pdf_filename = f"{data['client_name'].replace(' ', '_')}_factura.pdf"
     pdf_path = os.path.join("facturas", pdf_filename)
     
@@ -84,20 +84,18 @@ def recibir_pedido():
     
     pedidos.append(pedido)
     
-    # 🔥 Emitir el evento para actualizar la interfaz
     socketio.emit("actualizar_pedidos", {"pedidos": pedidos}, broadcast=True)
 
     return jsonify({"mensaje": "Pedido recibido", "pedido": pedido}), 200
 
 @socketio.on("nuevo_pedido")
 def recibir_pedido_ws(data):
-    """Recibe un pedido desde WebSockets y lo guarda en la lista de pedidos."""
     if "client_name" not in data or "order" not in data:
         return jsonify({"error": "Faltan datos"}), 400
 
     pedidos.append(data)
-    print(f"Nuevo pedido recibido vía WebSockets: {data}")  # Debugging
-    socketio.emit("actualizar_pedidos", pedidos)  # Notificar a todos los clientes
+    print(f"Nuevo pedido recibido vía WebSockets: {data}")  
+    socketio.emit("actualizar_pedidos", pedidos)
     return jsonify({"mensaje": "Pedido recibido", "pedido": data}), 200
 
 if __name__ == "__main__":
